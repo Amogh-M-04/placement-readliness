@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { analyzeJobDescription } from '../lib/analyzer';
 import { useAnalysisHistory } from '../hooks/useAnalysisHistory';
-import { ArrowLeft, History, CheckCircle2, BrainCircuit, Target, ListChecks, FileText } from 'lucide-react';
+import {
+    ArrowLeft, History, CheckCircle2, BrainCircuit, Target,
+    ListChecks, FileText, Download, Copy, X, ArrowRight
+} from 'lucide-react';
 import {
     Radar,
     RadarChart,
@@ -14,6 +17,7 @@ import {
     PolarRadiusAxis,
     ResponsiveContainer
 } from 'recharts';
+import { cn } from '../lib/utils';
 
 export function Assessments() {
     const [mode, setMode] = useState('input'); // 'input', 'result', 'history'
@@ -21,11 +25,30 @@ export function Assessments() {
     const [company, setCompany] = useState('');
     const [role, setRole] = useState('');
     const [currentAnalysis, setCurrentAnalysis] = useState(null);
-    const { history, saveAnalysis, deleteAnalysis } = useAnalysisHistory();
+    const { history, saveAnalysis, deleteAnalysis, updateAnalysis } = useAnalysisHistory();
+
+    // Interactive State
+    const [skillConfidence, setSkillConfidence] = useState({}); // { [skillName]: 'know' | 'practice' }
+    const [liveScore, setLiveScore] = useState(0);
+
+    // Initialize state when currentAnalysis changes
+    useEffect(() => {
+        if (currentAnalysis) {
+            setSkillConfidence(currentAnalysis.skillConfidence || {});
+            setLiveScore(currentAnalysis.readinessScore || 0);
+        }
+    }, [currentAnalysis]);
 
     const handleAnalyze = () => {
         if (!jd.trim()) return;
         const result = analyzeJobDescription(jd, company, role);
+        // Initialize all skills as 'practice' by default if not set
+        const initialConfidence = {};
+        Object.values(result.extractedSkills).flat().forEach(skill => {
+            initialConfidence[skill] = 'practice';
+        });
+        result.skillConfidence = initialConfidence;
+
         saveAnalysis(result);
         setCurrentAnalysis(result);
         setMode('result');
@@ -36,14 +59,94 @@ export function Assessments() {
         setMode('result');
     };
 
+    const toggleSkill = (skill) => {
+        const currentStatus = skillConfidence[skill] || 'practice';
+        const newStatus = currentStatus === 'know' ? 'practice' : 'know';
+
+        const newConfidence = { ...skillConfidence, [skill]: newStatus };
+        setSkillConfidence(newConfidence);
+
+        // Recalculate Score
+        // Base score logic from analyzer (simplified direct modification here)
+        // +2 for 'know', -2 for 'practice' relative to base isn't exact, 
+        // essentially we re-evaluate dynamic portion.
+        // For simplicity: We modify the stored score directly.
+
+        let scoreChange = newStatus === 'know' ? 2 : -2;
+        let newScore = Math.min(100, Math.max(0, liveScore + scoreChange));
+        setLiveScore(newScore);
+
+        // Update persistent history
+        if (currentAnalysis) {
+            const updated = {
+                ...currentAnalysis,
+                skillConfidence: newConfidence,
+                readinessScore: newScore
+            };
+            updateAnalysis(updated);
+            setCurrentAnalysis(updated);
+        }
+    };
+
     // Helper to format skill data for Radar Chart
     const getChartData = (skills) => {
         const categories = ["Core CS", "Languages", "Web Development", "Data & DB", "Cloud & DevOps"];
         return categories.map(cat => ({
             subject: cat,
-            A: skills[cat] ? Math.min(100, skills[cat].length * 20 + 40) : 20, // Mock score based on keyword count
+            A: skills[cat] ? Math.min(100, skills[cat].length * 20 + 40) : 20,
             fullMark: 100
         }));
+    };
+
+    // Export Functions
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        alert("Copied to clipboard!");
+    };
+
+    const downloadTxt = () => {
+        if (!currentAnalysis) return;
+        const { role, company, plan, checklist, questions } = currentAnalysis;
+
+        const content = `
+PLACEMENT READINESS REPORT
+Role: ${role}
+Company: ${company}
+Date: ${new Date().toLocaleDateString()}
+Score: ${liveScore}/100
+
+=== SKILL GAPS ===
+${Object.entries(skillConfidence)
+                .filter(([_, status]) => status === 'practice')
+                .map(([skill]) => `- ${skill}`)
+                .join('\n')}
+
+=== 7-DAY PLAN ===
+${plan.map(d => `${d.day} (${d.focus}):\n${d.tasks.map(t => `  - ${t}`).join('\n')}`).join('\n\n')}
+
+=== INTERVIEW QUESTIONS ===
+${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+
+=== CHECKLIST ===
+${Object.entries(checklist).map(([r, items]) => `${r}:\n${items.map(i => `  [ ] ${i}`).join('\n')}`).join('\n\n')}
+        `.trim();
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${role.replace(/\s+/g, '_')}_Plan.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const getWeakSkills = () => {
+        return Object.entries(skillConfidence)
+            .filter(([_, status]) => status === 'practice')
+            .map(([skill]) => skill)
+            .slice(0, 3);
     };
 
     return (
@@ -198,14 +301,29 @@ export function Assessments() {
                             <div className="relative w-32 h-32 flex items-center justify-center">
                                 <svg className="w-full h-full transform -rotate-90">
                                     <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/20" />
-                                    <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="8" fill="transparent" className={currentAnalysis.readinessScore > 70 ? "text-success" : "text-yellow-400"} strokeDasharray={351} strokeDashoffset={351 - (351 * currentAnalysis.readinessScore) / 100} strokeLinecap="round" />
+                                    <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="8" fill="transparent" className={liveScore > 70 ? "text-success" : "text-yellow-400"} strokeDasharray={351} strokeDashoffset={351 - (351 * liveScore) / 100} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
                                 </svg>
                                 <div className="absolute flex flex-col items-center">
-                                    <span className="text-3xl font-bold">{currentAnalysis.readinessScore}</span>
+                                    <span className="text-3xl font-bold">{liveScore}</span>
                                     <span className="text-xs text-white/60">SCORE</span>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="flex gap-4 overflow-x-auto pb-2">
+                        <Button variant="outline" size="sm" className="gap-2" onClick={() => copyToClipboard(JSON.stringify(currentAnalysis.plan, null, 2))}>
+                            <Copy className="w-4 h-4" /> Copy Plan
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-2" onClick={() => copyToClipboard(JSON.stringify(currentAnalysis.checklist, null, 2))}>
+                            <ListChecks className="w-4 h-4" /> Copy Checklist
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-2" onClick={() => copyToClipboard(currentAnalysis.questions.join('\n'))}>
+                            <BrainCircuit className="w-4 h-4" /> Copy Questions
+                        </Button>
+                        <Button variant="default" size="sm" className="gap-2 ml-auto" onClick={downloadTxt}>
+                            <Download className="w-4 h-4" /> Download Report
+                        </Button>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-8">
@@ -215,7 +333,7 @@ export function Assessments() {
                                 <CardTitle className="flex items-center gap-2"><Target className="w-5 h-5 text-accent" /> Skill Breakdown</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="h-[250px] w-full">
+                                <div className="h-[200px] w-full mb-4">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={getChartData(currentAnalysis.extractedSkills)}>
                                             <PolarGrid />
@@ -225,14 +343,28 @@ export function Assessments() {
                                         </RadarChart>
                                     </ResponsiveContainer>
                                 </div>
-                                <div className="mt-4 space-y-4">
+                                <div className="space-y-4">
                                     {Object.entries(currentAnalysis.extractedSkills).map(([cat, skills]) => (
                                         <div key={cat}>
                                             <h4 className="text-xs font-semibold uppercase text-primary/50 mb-2">{cat}</h4>
                                             <div className="flex flex-wrap gap-2">
-                                                {skills.map(skill => (
-                                                    <Badge key={skill} variant="secondary">{skill}</Badge>
-                                                ))}
+                                                {skills.map(skill => {
+                                                    const isKnown = skillConfidence[skill] === 'know';
+                                                    return (
+                                                        <Badge
+                                                            key={skill}
+                                                            variant={isKnown ? 'success' : 'secondary'}
+                                                            className={cn(
+                                                                "cursor-pointer hover:opacity-80 transition-all select-none flex items-center gap-1",
+                                                                !isKnown && "opacity-70"
+                                                            )}
+                                                            onClick={() => toggleSkill(skill)}
+                                                        >
+                                                            {isKnown ? <CheckCircle2 className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current" />}
+                                                            {skill}
+                                                        </Badge>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     ))}
@@ -240,22 +372,43 @@ export function Assessments() {
                             </CardContent>
                         </Card>
 
-                        {/* Interview Questions */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><BrainCircuit className="w-5 h-5 text-accent" /> Likely Interview Questions</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-4">
-                                    {currentAnalysis.questions.map((q, i) => (
-                                        <li key={i} className="flex gap-3 items-start">
-                                            <div className="min-w-[24px] h-6 bg-secondary/50 rounded-full flex items-center justify-center text-xs font-bold text-primary/70">{i + 1}</div>
-                                            <span className="text-sm text-primary/80 leading-relaxed">{q}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </CardContent>
-                        </Card>
+                        <div className="space-y-8">
+                            {/* Action Next */}
+                            <Card className="bg-primary/5 border-accent/20">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="flex items-center gap-2 text-base text-accent"><ArrowRight className="w-5 h-5" /> Action Next</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm text-primary/70 mb-3">Focus on these areas to boost your score:</p>
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {getWeakSkills().map(skill => (
+                                            <Badge key={skill} variant="outline" className="text-red-500 border-red-200 bg-red-50">{skill}</Badge>
+                                        ))}
+                                    </div>
+                                    <Button size="sm" className="w-full">Start Day 1 Plan Now</Button>
+                                </CardContent>
+                            </Card>
+
+                            {/* Interview Questions */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2"><BrainCircuit className="w-5 h-5 text-accent" /> Likely Interview Questions</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <ul className="space-y-4">
+                                        {currentAnalysis.questions.slice(0, 5).map((q, i) => ( // Show top 5 to save space
+                                            <li key={i} className="flex gap-3 items-start">
+                                                <div className="min-w-[24px] h-6 bg-secondary/50 rounded-full flex items-center justify-center text-xs font-bold text-primary/70">{i + 1}</div>
+                                                <span className="text-sm text-primary/80 leading-relaxed">{q}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <Button variant="link" size="sm" className="mt-2 text-xs" onClick={() => copyToClipboard(currentAnalysis.questions.join('\n'))}>
+                                        View all 10 questions
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
 
                     {/* 7-Day Plan */}
