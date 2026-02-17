@@ -7,18 +7,33 @@ export function useAnalysisHistory() {
     const [history, setHistory] = useState([]);
 
     useEffect(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                setHistory(JSON.parse(saved));
-            } catch (e) {
-                console.error("Failed to parse history", e);
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                // Validate parsed entries - remove corrupt ones
+                const validHistory = parsed.filter(item =>
+                    item &&
+                    item.id &&
+                    item.createdAt &&
+                    (item.extractedSkills || item.skillConfidence || item.skillConfidenceMap) // Minimal check for valid content
+                );
+
+                if (validHistory.length < parsed.length) {
+                    console.warn("Removed corrupted entries from history");
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(validHistory));
+                }
+
+                setHistory(validHistory);
             }
+        } catch (error) {
+            console.error("Failed to load history:", error);
+            setHistory([]);
         }
     }, []);
 
-    const saveAnalysis = (analysisResult) => {
-        const newHistory = [analysisResult, ...history];
+    const saveAnalysis = (analysis) => {
+        const newHistory = [analysis, ...history];
         setHistory(newHistory);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory));
     };
@@ -39,7 +54,8 @@ export function useAnalysisHistory() {
     }
 
     const updateAnalysis = (updatedItem) => {
-        const newHistory = history.map(item => item.id === updatedItem.id ? updatedItem : item);
+        const itemToSave = { ...updatedItem, updatedAt: updatedItem.updatedAt || new Date().toISOString() };
+        const newHistory = history.map(item => item.id === itemToSave.id ? itemToSave : item);
         setHistory(newHistory);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory));
     };

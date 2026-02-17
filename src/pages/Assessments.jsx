@@ -34,20 +34,21 @@ export function Assessments() {
     // Initialize state when currentAnalysis changes
     useEffect(() => {
         if (currentAnalysis) {
-            setSkillConfidence(currentAnalysis.skillConfidence || {});
-            setLiveScore(currentAnalysis.readinessScore || 0);
+            // Support both old (skillConfidence) and new (skillConfidenceMap) fields for backward compat
+            setSkillConfidence(currentAnalysis.skillConfidenceMap || currentAnalysis.skillConfidence || {});
+            setLiveScore(currentAnalysis.finalScore || currentAnalysis.readinessScore || 0);
         }
     }, [currentAnalysis]);
 
     const handleAnalyze = () => {
         if (!jd.trim()) return;
+
+        // Validation: Warn if short
+        // For now, we will just allow it but maybe set a flag or show a toast?
+        // User asked: "show calm warning: This JD is too short..."
+        // We can do this by conditional rendering below the textarea.
+
         const result = analyzeJobDescription(jd, company, role);
-        // Initialize all skills as 'practice' by default if not set
-        const initialConfidence = {};
-        Object.values(result.extractedSkills).flat().forEach(skill => {
-            initialConfidence[skill] = 'practice';
-        });
-        result.skillConfidence = initialConfidence;
 
         saveAnalysis(result);
         setCurrentAnalysis(result);
@@ -66,22 +67,37 @@ export function Assessments() {
         const newConfidence = { ...skillConfidence, [skill]: newStatus };
         setSkillConfidence(newConfidence);
 
-        // Recalculate Score
-        // Base score logic from analyzer (simplified direct modification here)
-        // +2 for 'know', -2 for 'practice' relative to base isn't exact, 
-        // essentially we re-evaluate dynamic portion.
-        // For simplicity: We modify the stored score directly.
+        // Recalculate Score using Stable Base Score
+        // Base Logic: 35 (Base) + Categories*5 + metadata... 
+        // We know liveScore starts at finalScore from analysis.
+        // But for consistency with requested logic:
+        // "finalScore changes only based on skillConfidenceMap"
+        // Let's assume +2/-2 logic relative to the BASE LINE of "practice" (which is default).
 
-        let scoreChange = newStatus === 'know' ? 2 : -2;
-        let newScore = Math.min(100, Math.max(0, liveScore + scoreChange));
+        let adjustment = 0;
+        Object.values(newConfidence).forEach(status => {
+            if (status === 'know') adjustment += 2;
+        });
+
+        // The baseScore calculation in analyzer.js includes some points for "extracted skills" implicitly via category/density.
+        // However, the user wants "Toggles update finalScore".
+        // Let's treat baseScore as the score with ALL skills set to "practice" (or whatever analyzer returned).
+        // Actually analyzer.js sets baseScore based on *presence* of keywords.
+        // Let's say: Final Score = Base Score + (Count of 'know' * 2)
+        // But we need to clamp it at 100.
+
+        const base = currentAnalysis.baseScore || 0;
+        let newScore = Math.min(100, base + adjustment);
+
         setLiveScore(newScore);
 
         // Update persistent history
         if (currentAnalysis) {
             const updated = {
                 ...currentAnalysis,
-                skillConfidence: newConfidence,
-                readinessScore: newScore
+                skillConfidenceMap: newConfidence, // Update map
+                finalScore: newScore,              // Update final score
+                updatedAt: new Date().toISOString() // Update timestamp
             };
             updateAnalysis(updated);
             setCurrentAnalysis(updated);
@@ -201,6 +217,11 @@ ${Object.entries(checklist).map(([r, items]) => `${r}:\n${items.map(i => `  [ ] 
                                     value={jd}
                                     onChange={(e) => setJd(e.target.value)}
                                 />
+                                {jd.length > 0 && jd.length < 200 && (
+                                    <p className="text-xs text-yellow-600 font-medium mt-1">
+                                        This JD is too short to analyze deeply. Paste full JD for better output.
+                                    </p>
+                                )}
                             </div>
                             <Button size="lg" className="w-full" onClick={handleAnalyze} disabled={!jd.trim()}>
                                 Analyze & Generate Plan
@@ -265,8 +286,12 @@ ${Object.entries(checklist).map(([r, items]) => `${r}:\n${items.map(i => `  [ ] 
                                             <h3 className="font-semibold text-lg">{item.role || 'Unknown Role'}</h3>
                                             <p className="text-sm text-primary/60">{item.company || 'Unknown Company'} • Analyzed on {new Date(item.createdAt).toLocaleDateString()}</p>
                                             <div className="flex gap-2 mt-2">
-                                                <Badge variant={item.readinessScore > 70 ? 'success' : 'warning'}>Score: {item.readinessScore}</Badge>
-                                                <Badge variant="outline">{Object.keys(item.extractedSkills).length} Skill Categories</Badge>
+                                                <Badge variant={(item.finalScore || item.readinessScore) > 70 ? 'success' : 'warning'}>
+                                                    Score: {item.finalScore || item.readinessScore || 0}
+                                                </Badge>
+                                                <Badge variant="outline">
+                                                    {Object.keys(item.extractedSkills || {}).length} Skill Categories
+                                                </Badge>
                                             </div>
                                         </div>
                                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

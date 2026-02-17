@@ -12,7 +12,16 @@ const SKILL_KEYWORDS = {
 
 export const analyzeJobDescription = (jdText, company, role) => {
     const text = jdText.toLowerCase();
-    const extractedSkills = {};
+    const extractedSkills = {
+        "Core CS": [],
+        "Languages": [],
+        "Web Development": [],
+        "Data & DB": [],
+        "Cloud & DevOps": [],
+        "Testing": [],
+        "AI/ML": [],
+        "Other": [] // "Other" category for fallback
+    };
     let totalSkillsFound = 0;
 
     // 1. Extract Skills
@@ -24,16 +33,16 @@ export const analyzeJobDescription = (jdText, company, role) => {
         }
     }
 
-    // Fallback if no skills found
+    // Fallback if no skills found (populate "Other")
     if (totalSkillsFound === 0) {
-        extractedSkills["General"] = ["General Aptitude", "Communication", "Problem Solving"];
+        extractedSkills["Other"] = ["Communication", "Problem solving", "Basic coding", "Projects"];
     }
 
-    // 2. Readiness Score Calculation
+    // 2. Readiness Score Calculation (Base Score)
     let score = 35; // Base score
 
     // +5 per detected category (max 30)
-    const categoryCount = Object.keys(extractedSkills).length;
+    const categoryCount = Object.values(extractedSkills).filter(s => s.length > 0).length;
     score += Math.min(30, categoryCount * 5);
 
     // +10 if company name provided
@@ -45,11 +54,18 @@ export const analyzeJobDescription = (jdText, company, role) => {
     // +10 if JD length > 800 chars
     if (jdText.length > 800) score += 10;
 
-    // Additional points for skill density (projects/experience usually implies many keywords)
+    // Additional points for skill density
     if (totalSkillsFound > 5) score += 5;
 
     // Cap at 100
-    score = Math.min(100, score);
+    const baseScore = Math.min(100, score);
+    const finalScore = baseScore; // Initially equal
+
+    // Initialize skill confidence map (default: practice)
+    const skillConfidenceMap = {};
+    Object.values(extractedSkills).flat().forEach(skill => {
+        skillConfidenceMap[skill] = 'practice';
+    });
 
 
     // 3. Company Intel & Round Mapping
@@ -59,19 +75,27 @@ export const analyzeJobDescription = (jdText, company, role) => {
     // 4. Generate Plan & Checklist
     const { checklist, plan, questions } = generateContent(extractedSkills);
 
+    const now = new Date().toISOString();
+
     return {
         id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        company,
-        role,
+        createdAt: now,
+        updatedAt: now,
+        company: company || "",
+        role: role || "",
         jdText,
         extractedSkills,
-        readinessScore: score,
+        baseScore,      // Stable baseline
+        finalScore,     // Mutable score
+        skillConfidenceMap, // User overrides
         checklist,
-        plan,
+        plan,           // Renamed to match request if needed, but 'plan' works. Let's keep 'plan' consistent with UI usage for now, or map it. Request said plan7Days.
+        // UI uses 'plan', so let's stick to 'plan' to avoid breaking UI, or alias it.
+        // The request asked for 'plan7Days'. I will add it as an alias or usage.
+        plan7Days: plan,
         questions,
-        companyProfile, // New field
-        roundMapping    // New field
+        companyProfile,
+        roundMapping
     };
 };
 
