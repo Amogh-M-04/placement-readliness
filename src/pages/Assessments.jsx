@@ -311,6 +311,90 @@ ${Object.entries(checklist).map(([r, items]) => `${r}:\n${items.map(i => `  [ ] 
                         </div>
                     </div>
 
+                    {/* Company Intelligence & Recruitment Process */}
+                    {currentAnalysis.companyProfile && (
+                        <div className="space-y-6">
+                            {/* Intel Card */}
+                            <Card className="bg-gradient-to-r from-slate-50 to-slate-100 border-secondary/50">
+                                <CardHeader className="pb-2">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <BrainCircuit className="w-5 h-5 text-accent" />
+                                            Company Intelligence
+                                        </CardTitle>
+                                        <Badge variant="outline" className="text-[10px] bg-white/50">
+                                            AI INSIGHTS
+                                        </Badge>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex flex-col md:flex-row gap-6">
+                                        <div className="space-y-3 min-w-[200px]">
+                                            <div>
+                                                <div className="text-xs text-primary/50 font-semibold uppercase tracking-wider mb-1">Type</div>
+                                                <Badge variant={currentAnalysis.companyProfile.type === 'Enterprise' ? 'default' : 'secondary'}>
+                                                    {currentAnalysis.companyProfile.type}
+                                                </Badge>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-primary/50 font-semibold uppercase tracking-wider mb-1">Est. Size</div>
+                                                <span className="text-sm font-medium">{currentAnalysis.companyProfile.size}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 border-l border-primary/10 pl-6">
+                                            <div className="text-xs text-primary/50 font-semibold uppercase tracking-wider mb-1">Typical Hiring Focus</div>
+                                            <p className="text-primary/80 leading-relaxed">
+                                                {currentAnalysis.companyProfile.focus}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 text-[10px] text-primary/40 text-right italic">
+                                        * Demo Mode: Company intel generated heuristically based on name.
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Round Mapping (Timeline) */}
+                            {currentAnalysis.roundMapping && currentAnalysis.roundMapping.length > 0 && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <ListChecks className="w-5 h-5 text-accent" />
+                                            Recruitment Process Map
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="relative space-y-0 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-secondary before:to-transparent">
+                                            {currentAnalysis.roundMapping.map((round, i) => (
+                                                <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+
+                                                    {/* Icon */}
+                                                    <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                                                        <span className="text-sm font-bold text-accent">{i + 1}</span>
+                                                    </div>
+
+                                                    {/* Card */}
+                                                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-secondary/40 bg-white shadow-sm hover:shadow-md transition-shadow">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <div className="font-bold text-primary">{round.name.split(':')[0]}</div>
+                                                            <span className="text-[10px] text-primary/40 font-mono">STEP {i + 1}</span>
+                                                        </div>
+                                                        <div className="text-sm font-medium text-accent mb-2">{round.name.split(':')[1]}</div>
+                                                        <div className="text-xs text-primary/60 mb-2">{round.desc}</div>
+                                                        <div className="text-[10px] bg-secondary/30 p-2 rounded text-primary/70">
+                                                            <span className="font-semibold text-primary/90">Why this matters: </span>
+                                                            {round.why}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                    )}
+
                     <div className="flex gap-4 overflow-x-auto pb-2">
                         <Button variant="outline" size="sm" className="gap-2" onClick={() => copyToClipboard(JSON.stringify(currentAnalysis.plan, null, 2))}>
                             <Copy className="w-4 h-4" /> Copy Plan

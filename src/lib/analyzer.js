@@ -52,7 +52,11 @@ export const analyzeJobDescription = (jdText, company, role) => {
     score = Math.min(100, score);
 
 
-    // 3. Generate Plan & Checklist
+    // 3. Company Intel & Round Mapping
+    const companyProfile = getCompanyProfile(company);
+    const roundMapping = generateRoundMapping(companyProfile, extractedSkills);
+
+    // 4. Generate Plan & Checklist
     const { checklist, plan, questions } = generateContent(extractedSkills);
 
     return {
@@ -65,8 +69,107 @@ export const analyzeJobDescription = (jdText, company, role) => {
         readinessScore: score,
         checklist,
         plan,
-        questions
+        questions,
+        companyProfile, // New field
+        roundMapping    // New field
     };
+};
+
+// --- Heuristic Helpers ---
+
+const getCompanyProfile = (companyName) => {
+    if (!companyName || companyName.trim().length === 0) return null;
+
+    const name = companyName.toLowerCase();
+
+    // Known Giants / Enterprises
+    const giants = [
+        "google", "microsoft", "amazon", "meta", "facebook", "apple", "netflix",
+        "tcs", "infosys", "wipro", "accenture", "cognizant", "capgemini", "hcl", "ibm",
+        "oracle", "cisco", "intel", "samsung", "adobe", "salesforce", "uber", "linkedin"
+    ];
+
+    const isEnterprise = giants.some(giant => name.includes(giant));
+
+    if (isEnterprise) {
+        return {
+            name: companyName,
+            type: "Enterprise",
+            size: "2000+ Employees",
+            focus: "Data Structures, Algorithms, Core CS Fundamentals, and Aptitude."
+        };
+    } else {
+        // Default to Startup / Mid-size
+        return {
+            name: companyName,
+            type: "Startup / Mid-size",
+            size: "< 200 Employees",
+            focus: "Practical problem solving, Development stack depth, and System Design."
+        };
+    }
+};
+
+const generateRoundMapping = (profile, skills) => {
+    if (!profile) return [];
+
+    const rounds = [];
+    const isEnterpise = profile.type === "Enterprise";
+
+    // Round 1
+    if (isEnterpise) {
+        rounds.push({
+            name: "Round 1: Online Assessment",
+            desc: "Aptitude (Quants, Logical) + Medium DSA Problems",
+            why: "Filters candidates based on raw problem-solving speed and accuracy."
+        });
+    } else {
+        rounds.push({
+            name: "Round 1: Practical / Screening",
+            desc: "Take-home assignment or Live Coding (Practical)",
+            why: "Tests your ability to build actual features and write clean code."
+        });
+    }
+
+    // Round 2
+    if (isEnterpise) {
+        rounds.push({
+            name: "Round 2: Technical Interview I",
+            desc: "Data Structures & Algorithms (Trees, Graphs, DP)",
+            why: "Validates your deep understanding of efficient code and complexity."
+        });
+    } else {
+        rounds.push({
+            name: "Round 2: Technical Deep Dive",
+            desc: "Stack-specific questions (React/Node/DB) + System Design basics",
+            why: "Checks if you can architect and debug real-world systems."
+        });
+    }
+
+    // Round 3
+    if (isEnterpise) {
+        rounds.push({
+            name: "Round 3: Technical Interview II",
+            desc: "System Design (LLD/HLD) + Core CS (OS/DBMS)",
+            why: "Ensures you understand the underlying systems that power software."
+        });
+    } else {
+        rounds.push({
+            name: "Round 3: Culture & Founder Fit",
+            desc: "Discussion on ownership, past projects, and vision",
+            why: "Startups need self-starters who align with their fast-paced culture."
+        });
+    }
+
+    // Round 4 (Enterprise only usually has a dedicated HR round separate from Managerial)
+    if (isEnterpise) {
+        rounds.push({
+            name: "Round 4: HR & Managerial",
+            desc: "Behavioral questions, Team fit, Salary negotiation",
+            why: "Assesses soft skills and long-term alignement with company values."
+        });
+    }
+
+    return rounds;
 };
 
 const generateContent = (skills) => {
