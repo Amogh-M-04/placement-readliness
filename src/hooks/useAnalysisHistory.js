@@ -38,11 +38,18 @@ export function useAnalysisHistory() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory));
     }
 
+    const updateAnalysis = (updatedItem) => {
+        const newHistory = history.map(item => item.id === updatedItem.id ? updatedItem : item);
+        setHistory(newHistory);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory));
+    };
+
     return {
         history,
         saveAnalysis,
         clearHistory,
         getAnalysisById,
-        deleteAnalysis
+        deleteAnalysis,
+        updateAnalysis
     };
 }

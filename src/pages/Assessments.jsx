@@ -301,7 +301,7 @@ ${Object.entries(checklist).map(([r, items]) => `${r}:\n${items.map(i => `  [ ] 
                             <div className="relative w-32 h-32 flex items-center justify-center">
                                 <svg className="w-full h-full transform -rotate-90">
                                     <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/20" />
-                                    <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="8" fill="transparent" className={liveScore > 70 ? "text-success" : "text-yellow-400"} strokeDasharray={351} strokeDashoffset={351 - (351 * liveScore) / 100} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+                                    <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="8" fill="transparent" className={cn(liveScore > 70 ? "text-success" : "text-yellow-400", "transition-all duration-1000 ease-out")} strokeDasharray={351} strokeDashoffset={351 - (351 * liveScore) / 100} strokeLinecap="round" />
                                 </svg>
                                 <div className="absolute flex flex-col items-center">
                                     <span className="text-3xl font-bold">{liveScore}</span>
