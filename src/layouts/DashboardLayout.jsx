@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { LayoutDashboard, Code, ClipboardCheck, BookOpen, User, Bell, Search } from 'lucide-react';
+import { LayoutDashboard, Code, ClipboardCheck, BookOpen, User, Bell, Search, Rocket } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Input } from '../components/ui/Input';
 
@@ -11,6 +11,7 @@ export function DashboardLayout() {
         { icon: ClipboardCheck, label: 'Assessments', path: '/assessments' },
         { icon: BookOpen, label: 'Resources', path: '/resources' },
         { icon: User, label: 'Profile', path: '/profile' },
+        { icon: Rocket, label: 'Ship & Proof', path: '/prp/proof' },
     ];
 
     return (
