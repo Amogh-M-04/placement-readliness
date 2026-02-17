@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
-import { CheckCircle2, Circle, Copy, ExternalLink, Trophy } from 'lucide-react';
+import { CheckCircle2, Copy, Trophy } from 'lucide-react';
 
 const CHECKLIST_KEY = 'prp_test_checklist';
 const SUBMISSION_KEY = 'prp_final_submission';
