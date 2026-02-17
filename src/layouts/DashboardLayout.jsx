@@ -19,7 +19,10 @@ export function DashboardLayout() {
             <aside className="w-64 bg-primary text-white flex flex-col fixed h-full z-20">
                 <div className="h-16 flex items-center px-6 border-b border-white/10">
                     <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center font-bold text-lg mr-3 shadow-inner">P</div>
-                    <span className="font-serif font-bold text-lg tracking-wide">Placement Prep</span>
+                    <div>
+                        <span className="font-serif font-bold text-lg tracking-wide block leading-none">Placement Prep</span>
+                        <span className="text-[10px] text-white/50 font-mono">v1.2</span>
+                    </div>
                 </div>
 
                 <nav className="flex-1 py-6 px-3 space-y-1">
