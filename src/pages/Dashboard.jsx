@@ -20,50 +20,51 @@ const skillData = [
     { subject: 'Aptitude', A: 70, fullMark: 100 },
 ];
 
-export function Dashboard() {
-    // Circular Progress Component (Custom SVG)
-    const CircularProgress = ({ value, size = 180, strokeWidth = 15 }) => {
-        const radius = (size - strokeWidth) / 2;
-        const circumference = radius * 2 * Math.PI;
-        const progressOffset = circumference - (value / 100) * circumference;
 
-        return (
-            <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-                <svg
-                    className="transform -rotate-90 w-full h-full"
-                    width={size}
-                    height={size}
-                >
-                    <circle
-                        className="text-secondary"
-                        stroke="currentColor"
-                        strokeWidth={strokeWidth}
-                        fill="transparent"
-                        r={radius}
-                        cx={size / 2}
-                        cy={size / 2}
-                    />
-                    <circle
-                        className="text-accent transition-all duration-1000 ease-out"
-                        stroke="currentColor"
-                        strokeWidth={strokeWidth}
-                        strokeDasharray={circumference}
-                        strokeDashoffset={progressOffset}
-                        strokeLinecap="round"
-                        fill="transparent"
-                        r={radius}
-                        cx={size / 2}
-                        cy={size / 2}
-                    />
-                </svg>
-                <div className="absolute flex flex-col items-center justify-center text-primary">
-                    <span className="text-4xl font-bold font-serif">{value}</span>
-                    <span className="text-xs font-medium uppercase tracking-wider text-primary/60 mt-1">/ 100</span>
-                </div>
+// Circular Progress Component (Custom SVG)
+const CircularProgress = ({ value, size = 180, strokeWidth = 15 }) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const progressOffset = circumference - (value / 100) * circumference;
+
+    return (
+        <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+            <svg
+                className="transform -rotate-90 w-full h-full"
+                width={size}
+                height={size}
+            >
+                <circle
+                    className="text-secondary"
+                    stroke="currentColor"
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                    r={radius}
+                    cx={size / 2}
+                    cy={size / 2}
+                />
+                <circle
+                    className="text-accent transition-all duration-1000 ease-out"
+                    stroke="currentColor"
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={progressOffset}
+                    strokeLinecap="round"
+                    fill="transparent"
+                    r={radius}
+                    cx={size / 2}
+                    cy={size / 2}
+                />
+            </svg>
+            <div className="absolute flex flex-col items-center justify-center text-primary">
+                <span className="text-4xl font-bold font-serif">{value}</span>
+                <span className="text-xs font-medium uppercase tracking-wider text-primary/60 mt-1">/ 100</span>
             </div>
-        );
-    };
+        </div>
+    );
+};
 
+export function Dashboard() {
     return (
         <div className="space-y-8 max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
