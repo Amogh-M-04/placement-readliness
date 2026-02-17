@@ -9,6 +9,7 @@ import { Resources } from './pages/Resources';
 import { Profile } from './pages/Profile';
 import { TestChecklist } from './pages/TestChecklist';
 import { ShipLock } from './pages/ShipLock';
+import { Proof } from './pages/Proof';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           {/* PRP Testing & Shipping Workflows */}
           <Route path="prp/07-test" element={<TestChecklist />} />
           <Route path="prp/08-ship" element={<ShipLock />} />
+          <Route path="prp/proof" element={<Proof />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

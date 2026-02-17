@@ -66,6 +66,19 @@ const CircularProgress = ({ value, size = 180, strokeWidth = 15 }) => {
 };
 
 export function Dashboard() {
+    // Check for "Shipped" status
+    const [status, setStatus] = React.useState('In Progress');
+
+    React.useEffect(() => {
+        const saved = localStorage.getItem('prp_final_submission');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.isShipped) setStatus('Shipped');
+            } catch (e) { }
+        }
+    }, []);
+
     return (
         <div className="space-y-8 max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
@@ -73,12 +86,23 @@ export function Dashboard() {
                     <h1 className="text-3xl font-serif font-bold text-primary">Overview</h1>
                     <p className="text-primary/60 mt-1">Track your placement readiness journey.</p>
                 </div>
-                <div className="text-sm text-primary/60 bg-white px-4 py-2 rounded-full shadow-sm border border-secondary flex items-center gap-2">
+                <div className={cn(
+                    "text-sm px-4 py-2 rounded-full shadow-sm border flex items-center gap-2 transition-colors duration-500",
+                    status === 'Shipped'
+                        ? "bg-success/10 text-success border-success/20"
+                        : "text-primary/60 bg-white border-secondary"
+                )}>
                     <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                        <span className={cn(
+                            "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                            status === 'Shipped' ? "bg-success" : "bg-yellow-500"
+                        )}></span>
+                        <span className={cn(
+                            "relative inline-flex rounded-full h-2 w-2",
+                            status === 'Shipped' ? "bg-success" : "bg-yellow-500"
+                        )}></span>
                     </span>
-                    Online
+                    {status}
                 </div>
             </div>
 
